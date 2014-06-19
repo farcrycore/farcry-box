@@ -1,0 +1,1 @@
+canonical_maps = regexp:/etc/postfix/canonical

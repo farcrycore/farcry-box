@@ -1,0 +1,136 @@
+---
+- hosts: all
+  sudo: true
+  vars:
+    railo_installer: http://agora.daemonite.com/vagrant/engines/railo-4.1.2.005-pl0-linux-x64-installer.run
+    farcry: /code
+    sitename: My site
+    projectdir: mysite
+    root: "{{farcry}}/projects/{{projectdir}}/www"
+    domain: mysite.example.com
+    dbname: mysite
+    updateappkey: farcry
+  
+  tasks:
+  # timezone
+  - name: set timezone
+    copy: content="Australia/Sydney" dest=/etc/timezone mode=0644 force=yes
+  - name: set localtime
+    copy: src=/usr/share/zoneinfo/Australia/Sydney dest=/etc/localtime mode=644 force=yes
+  
+  # apt repositories
+  - name: repo management package
+    apt: pkg=python-software-properties state=latest update_cache=true
+  - name: add git repository
+    apt_repository: repo="ppa:git-core/ppa" state=present
+  
+  # system packages
+  - name: setup debconf selections
+    template: src=/vagrant/provisioning/postfix/debconf-selections.txt dest=/tmp/debconf-selections.txt
+  - name: debconf selections
+    shell: debconf-set-selections /tmp/debconf-selections.txt
+  - name: delete debconf selections
+    file: path=/tmp/debconf-selections.txt state=absent
+  - name: install system packages
+    apt: pkg={{item}} update_cache=yes cache_valid_time=3600 state=latest
+    with_items:
+    - apache2
+    - cronolog
+    - vim
+    - emacs
+    - postfix
+    - git
+    - mysql-server
+    - curl
+  
+  # git setup
+  - name: git config
+    shell: git config --global push.default simple
+  
+  # postfix setup
+  - name: configure postfix
+    template: src=/vagrant/provisioning/postfix/{{item}} dest=/etc/postfix/{{item}} mode=0644
+    with_items:
+    - canonical
+    - main.cf
+    notify: 
+    - run postmap
+    - restart postfix
+  - name: sync mail to logs
+    cron: name="postfix mail sync" job="cp /var/mail/vagrant /logs/postfix-vagrant.log"
+  
+  # mysql setup
+  - name: initialize intranet db
+    shell: "mysql -e 'create database {{dbname}}' mysql"
+    register: dbcreated
+    ignore_errors: true
+  
+  # railo installation
+  - name: download railo installer
+    command: wget -O /vagrant/provisioning/railo/{{railo_installer|basename}} {{railo_installer}} creates=/vagrant/provisioning/railo/{{railo_installer|basename}}
+  - name: installer executable
+    file: path=/vagrant/provisioning/railo/{{railo_installer|basename}} mode=0744
+  - name: install railo
+    shell: /vagrant/provisioning/railo/{{railo_installer|basename}} --mode unattended --railopass farcry creates=/opt/railo/uninstall creates=/opt/railo
+    register: installed_railo
+  - name: update railo JVM settings
+    template: src=/vagrant/provisioning/railo/setenv.sh dest=/opt/railo/tomcat/bin/setenv.sh
+    notify: restart railo
+  - name: update tomcat server.xml
+    template: src=/vagrant/provisioning/railo/server.xml dest=/opt/railo/tomcat/conf/server.xml
+    notify: restart railo
+  - name: sync railo logs
+    cron: name="{{domain}} railo log sync" job="for f in `ls {{root}}/WEB-INF/railo/logs/`; do cp {{root}}/WEB-INF/railo/logs/$f /logs/railo-$f; done"
+  
+  # apache setup
+  - name: configure apache
+    template: src=/vagrant/provisioning/apache2/ports.conf dest=/etc/apache2/ports.conf mode=0644
+    notify: restart apache
+  - name: setup site conf
+    template: src=/vagrant/provisioning/apache2/site.conf dest=/etc/apache2/sites-enabled/site.conf mode=0644
+    notify: restart apache
+  - name: remove default site
+    file: path=/etc/apache2/sites-enabled/000-default state=absent
+    notify: restart apache
+  - name: apache packages
+    shell: a2enmod {{item}} creates=/etc/apache2/mods-enabled/{{item}}.load
+    with_items:
+    - rewrite
+    - proxy_ajp
+    notify: restart apache
+  
+  # railo configuration
+  - name: wait for railo to get started
+    pause: seconds=30
+    when: installed_railo|success
+  - name: ping website to initialize /WEB-INF
+    shell: wget --delete-after http://{{domain}}/index.cfm creates={{root}}/WEB-INF/railo || true creates={{root}}/WEB-INF
+    when: installed_railo|success
+  - name: update railo xml
+    template: src=/vagrant/provisioning/railo/railo-web.xml.cfm dest={{root}}/WEB-INF/railo/railo-web.xml.cfm
+    notify: restart railo
+    ignore_errors: true
+  
+  # site installation
+  - name: prepare apache for project init
+    service: name=apache2 state=restarted
+    when: dbcreated|success
+  - name: install project data
+    shell: "curl 'http://{{domain}}/webtop/install/' -H 'Host: {{domain}}' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'Referer: http://{{domain}}/webtop/install/' -H 'Connection: keep-alive' -H 'Content-Type: application/x-www-form-urlencoded' --data 'selectedSkeleton=&displayName={{sitename}}&projectDirectoryName={{projectdir}}&name={{projectdir}}&updateappKey={{updateappkey}}&dsn={{dbname}}&dbType=mysql&dbOwner=&farcryUserPassword=farcry&installAction=install'"
+    when: dbcreated|success
+  - name: project updateall
+    shell: "curl 'http://{{domain}}/?updateall={{updateappkey}}' -H 'Host: {{domain}}' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate' -H 'Referer: http://{{domain}}/' -H 'Connection: keep-alive'"
+    when: dbcreated|success
+    notify: restart railo
+  
+  handlers:
+  - name: run postmap
+    shell: postmap /etc/postfix/canonical
+  - name: restart postfix
+    service: name=postfix enabled=yes state=restarted
+  
+  - name: restart apache
+    service: name=apache2 enabled=yes state=restarted
+  
+  - name: restart railo
+    service: name=railo_ctl enabled=yes state=restarted
