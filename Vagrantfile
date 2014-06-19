@@ -40,7 +40,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     web.vm.provision :shell, :path => "provisioning/ansible-run.sh", :args => "/vagrant/provisioning/provision.yml"
     
     web.vm.provider "virtualbox" do |vb|
-      web.vm.hostname = "spp.bng.daemonite.com"
+      web.vm.hostname = "mysite.example.com"
       web.hostmanager.aliases = IO.readlines("provisioning/aliases.txt").collect(&:strip)
 
       vb.customize ["modifyvm", :id, "--memory", "1024", "--natdnshostresolver1", "on"]
