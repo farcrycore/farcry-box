@@ -19,3 +19,18 @@ updating the development environment.
 
 All mail is handled by a postfix process on the VM and synced to 
 logs/postfix-vagrant.log once a minute.
+
+# Setting up the FarCry site
+
+To update the config to setup the actual FarCry site:
+
+provisioning/provision.yml
+- vars => update sitename, projectdir, domain, dbname
+
+provisioning/fcdeploy.txt
+- either update with project fcgit script OR
+- delete, and update README.md with location of actual script
+
+README.md
+- add info about default login farcry/farcry (provisioning script 
+automatically installs project)
