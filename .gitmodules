@@ -1,0 +1,12 @@
+[submodule "code/core"]
+	path = code/core
+	url = https://github.com/farcrycore/core.git
+	branch = p700
+[submodule "code/plugins/farcrycms"]
+	path = code/plugins/farcrycms
+	url = https://github.com/farcrycore/plugin-farcrycms.git
+	branch = master
+[submodule "code/projects/chelsea"]
+	path = code/projects/chelsea
+	url = https://github.com/farcrycore/project-chelsea.git
+	branch = master
