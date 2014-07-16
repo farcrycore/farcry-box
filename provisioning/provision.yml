@@ -2,14 +2,14 @@
 - hosts: all
   sudo: true
   vars:
-    railo_installer: http://agora.daemonite.com/vagrant/engines/railo-4.1.2.005-pl0-linux-x64-installer.run
+    railo_installer: https://s3-ap-southeast-2.amazonaws.com/daemon-provisioning-resources/railo/railo-4.2.1.000-pl1-linux-x64-installer.run
     farcry: /code
-    sitename: My site
-    projectdir: mysite
+    sitename: Chelsea Boots
+    projectdir: chelsea
     root: "{{farcry}}/projects/{{projectdir}}/www"
-    domain: mysite.example.com
-    dbname: mysite
-    updateappkey: farcry
+    domain: chelsea.farcrycore.org
+    dbname: chelsea
+    updateappkey: chelsea
   
   tasks:
   # timezone
