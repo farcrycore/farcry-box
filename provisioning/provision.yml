@@ -109,6 +109,9 @@
   - name: ping website to initialize /WEB-INF
     shell: wget --delete-after http://{{domain}}/index.cfm creates={{root}}/WEB-INF/railo || true creates={{root}}/WEB-INF
     when: installed_railo|success
+  - name: make sure WEB-INF/railo exists
+    shell: mkdir -p {{root}}/WEB-INF/railo
+    when: installed_railo|success    
   - name: update railo xml
     template: src=/vagrant/provisioning/railo/railo-web.xml.cfm dest={{root}}/WEB-INF/railo/railo-web.xml.cfm
     notify: restart railo
