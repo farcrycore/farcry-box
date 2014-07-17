@@ -10,7 +10,7 @@ Site access:
 
 - http://chelsea.farcrycore.org
 - http://chelsea.farcrycore.org/webtop (farcry/farcry)
-- http://chelsea.farcrycore.org/railo-context/admin/server.cfm (daemon)
+- http://chelsea.farcrycore.org/railo-context/admin/server.cfm (farcry)
 
 (note this is not a real domain -- it's just a local host file reference that's automatically set up but its nicer than an IP address)
 
