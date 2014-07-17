@@ -31,7 +31,7 @@ Path placeholders:
 <!--	or ask your database distributor 																-->
 
 	<data-sources>
-		<data-source allow="511" blob="false" class="org.gjt.mm.mysql.Driver" clob="false" connectionLimit="-1" connectionTimeout="1" custom="characterEncoding=UTF-8&amp;autoReconnect=true&amp;useUnicode=true&amp;allowMultiQueries=true" database="{{dbname}}" dsn="jdbc:mysql://{host}:{port}/{database}" host="localhost" metaCacheTimeout="60000" name="{{dbname}}" password="" port="3306" storage="false" username="dev" validate="false"/>
+		<data-source allow="511" blob="false" class="org.gjt.mm.mysql.Driver" clob="false" connectionLimit="-1" connectionTimeout="1" custom="characterEncoding=UTF-8&amp;autoReconnect=true&amp;useUnicode=true&amp;allowMultiQueries=true" database="{{dbname}}" dsn="jdbc:mysql://{host}:{port}/{database}" host="localhost" metaCacheTimeout="60000" name="{{dbname}}-local" password="" port="3306" storage="false" username="dev" validate="false"/>
 	</data-sources>
 	
 	<resources>
